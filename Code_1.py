@@ -2,12 +2,8 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.ensemble import AdaBoostRegressor
-from sklearn.tree import DecisionTreeRegressor
 from sklearn import metrics
-from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import ShuffleSplit, train_test_split
 from sklearn import preprocessing
 from sklearn.ensemble import BaggingRegressor
 import math, os, random 
@@ -21,7 +17,7 @@ def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None,
                         n_jobs=None, train_sizes=np.linspace(.1, 1.0, 5)):
   
     if axes is None:
-        _, axes = plt.subplots(1, 1, figsize=(20, 5))
+        _, axes = plt.subplots(1, 1, figsize=(20, 5), squeeze=False)
 
     axes[0].set_title(title)
     if ylim is not None:
@@ -82,7 +78,7 @@ def load_data():
 
 
 #  define the models,which are baggings of MLP, KNN, RBF Network, Model Tree(M5P, REF), Linear Regression
-def models():
+def Models():
     # Initialize the models
     linear_reg = LinearRegression()
 
@@ -90,9 +86,27 @@ def models():
     regressor_names = ["Linear Regression"]
 
     # Bagging of the models
-    regressors_bagging = []
-    for reg in regressors:
+    for index in range(len(regressors)):
 
-        regEnsemble = BaggingRegressor(base_estimator=reg, n_estimators=10, max_samples=1.0, oob_score=True, random_state=random.randint(0,100))
-    regressors.append(regEnsemble)
-    regressor_names.append("Linear Regression Ensemble")
+        regEnsemble = BaggingRegressor(base_estimator=regressors[index], n_estimators=10, max_samples=1.0, oob_score=False, random_state=random.randint(0,100))
+        regressors[index] = regEnsemble
+        regressor_names[index] += " Ensemble"
+
+
+    return regressors, regressor_names
+
+
+def main():
+    fig, axes = plt.subplots(1, 1, figsize=(10, 15), squeeze=False)
+    
+    data_X, data_Y, train_num = load_data()
+    cv = ShuffleSplit(n_splits=5, test_size=0.3, random_state=0)
+    estimators, estimator_names = Models()
+    for estimator, estimator_name in zip(estimators, estimator_names):
+        print("******" + estimator_name + "******")
+        plot_learning_curve(estimator=estimator, title=estimator_name, X=data_X, y=data_Y, axes=axes[:,0],cv=cv)
+
+    plt.show()
+
+if __name__ == "__main__":
+    main()
